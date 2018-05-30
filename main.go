@@ -74,7 +74,7 @@ var (
 	)
 	writeInfluxdbURL = flag.String(
 		"write.influxdb.url",
-		"http://localhost:8086",
+		"",
 		"URL of InfluxDB server to send points to.",
 	)
 	writeInfluxdbTimeout = flag.Duration(
@@ -332,6 +332,8 @@ func init() {
 	flag.Var(&readInfluxdbFieldValue, "read.influxdb.field", "Field to read sample values from.")
 	flag.Var(&readInfluxdbRetentionPolicySelector, "read.influxdb.retention-policy", "Retention policy to query from.")
 
+	flag.Lookup("write.influxdb.url").DefValue = "http://localhost:8086"
+
 	prometheus.MustRegister(droppedSamples)
 	prometheus.MustRegister(receivedPoints)
 	prometheus.MustRegister(receivedSamples)
@@ -358,8 +360,12 @@ func main() {
 	level.Info(logger).Log("msg", "Starting prometheus-influxdb-adapter", "info", version.Info())
 	level.Info(logger).Log("build_context", version.BuildContext())
 
-	if u := os.Getenv("WRITE_INFLUXDB_URL"); len(u) > 0 {
-		*writeInfluxdbURL = u
+	if f := flag.Lookup("write.influxdb.url"); f.Value.String() == "" {
+		if u := os.Getenv("WRITE_INFLUXDB_URL"); len(u) > 0 {
+			*writeInfluxdbURL = u
+		} else {
+			*writeInfluxdbURL = f.DefValue
+		}
 	}
 
 	u, err := url.Parse(*writeInfluxdbURL)
