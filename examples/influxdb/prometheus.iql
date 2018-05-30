@@ -1,0 +1,7 @@
+ALTER RETENTION POLICY autogen ON prometheus DURATION 1d SHARD DURATION 1h
+CREATE RETENTION POLICY "1m" ON prometheus DURATION 15d REPLICATION 1
+CREATE CONTINUOUS QUERY "1m" ON prometheus BEGIN SELECT max(value), mean(value), min(value), sum(value) INTO prometheus."1m".:MEASUREMENT FROM prometheus../.*/ GROUP BY time(1m), * END
+CREATE RETENTION POLICY "5m" ON prometheus DURATION 63d REPLICATION 1
+CREATE CONTINUOUS QUERY "5m" ON prometheus BEGIN SELECT max(value), mean(value), min(value), sum(value) INTO prometheus."5m".:MEASUREMENT FROM prometheus../.*/ GROUP BY time(5m), * END
+CREATE RETENTION POLICY "1h" ON prometheus DURATION 455d REPLICATION 1
+CREATE CONTINUOUS QUERY "1h" ON prometheus BEGIN SELECT max(value), mean(value), min(value), sum(value) INTO prometheus."1h".:MEASUREMENT FROM prometheus../.*/ GROUP BY time(1h), * END

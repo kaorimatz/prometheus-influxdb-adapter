@@ -1,0 +1,53 @@
+version: '3'
+services:
+  grafana:
+    image: grafana/grafana:master
+    ports:
+      - 3000:3000
+    volumes:
+      - ./examples/grafana/grafana.ini:/etc/grafana/grafana.ini:ro
+      - ./examples/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+  influxdb:
+    image: influxdb
+    ports:
+      - 8082:8082
+      - 8086:8086
+      - 8089:8089
+    volumes:
+      - ./examples/influxdb/influxdb.conf:/etc/influxdb/influxdb.conf:ro
+      - ./examples/influxdb/prometheus.iql:/docker-entrypoint-initdb.d/prometheus.iql:ro
+    environment:
+      - INFLUXDB_DB=prometheus
+  prometheus:
+    image: prom/prometheus:master
+    ports:
+      - 9090:9090
+    volumes:
+      - ./examples/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command: [
+      "--config.file=/etc/prometheus/prometheus.yml",
+      "--log.level=debug",
+      "--storage.tsdb.path=/prometheus",
+      "--storage.tsdb.retention=1h",
+      "--web.enable-admin-api",
+    ]
+    depends_on:
+      - prometheus-influxdb-adapter
+  prometheus-influxdb-adapter: 
+    image: kaorimatz/prometheus-influxdb-adapter
+    ports: 
+      - 9201:9201
+    command: [
+      "--log.level=debug",
+      "--read.influxdb.field=max_over_time:max",
+      "--read.influxdb.field=min_over_time:min",
+      "--read.influxdb.field=sum_over_time:sum",
+      "--read.influxdb.field=mean",
+      "--read.influxdb.retention-policy=1h:1h",
+      "--read.influxdb.retention-policy=5m:5m",
+      "--read.influxdb.retention-policy=1m",
+      "--read.influxdb.rpc-address=influxdb:8082",
+      "--write.influxdb.url=udp://influxdb:8089",
+    ]
+    depends_on:
+      - influxdb
