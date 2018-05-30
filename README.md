@@ -90,6 +90,19 @@ You can also change the field (default is `value` field) in InfluxDB for storing
       -write.influxdb.url string
             URL of InfluxDB server to send points to. (default "http://localhost:8086")
 
+### Metrics
+
+| Name | Help | Labels |
+| -- | -- | -- |
+| dropped\_samples\_total | Total number of dropped samples. | |
+| http\_request\_duration\_seconds | Histogram of HTTP request latencies. | handler |
+| http\_request\_size\_bytes | Histogram of HTTP request size. | handler |
+| http\_requests\_total | Total number of HTTP requests. | handler, code |
+| http\_response\_size\_bytes | Histogram of HTTP response size. | handler |
+| read\_points\_total | Total number of points read from InfluxDB. | database, retention\_policy |
+| received\_samples\_total | Total number of received samples. | |
+| written\_points\_total | Total number of points written to InfluxDB. | database, retention\_policy |
+
 ### Docker
 
 You can deploy this adapter using the [kaorimatz/prometheus-influxdb-adapter](https://hub.docker.com/r/kaorimatz/prometheus-influxdb-adapter/) Docker image.
