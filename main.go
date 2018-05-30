@@ -102,6 +102,9 @@ var (
 		"/metrics",
 		"Path under which to expose metrics.",
 	)
+
+	readInfluxdbFieldValue              fieldValue
+	readInfluxdbRetentionPolicySelector retentionPolicyValue
 )
 
 var (
@@ -180,10 +183,6 @@ type fieldValue struct {
 }
 
 func (v *fieldValue) String() string {
-	if v.fallback == "" && v.fields == nil {
-		return defaultField
-	}
-
 	var b strings.Builder
 	for fun, field := range v.fields {
 		if b.Len() > 0 {
@@ -323,15 +322,11 @@ func (s *retentionPolicySelector) get(step int64) string {
 	return s.fallback
 }
 
-var (
-	readInfluxdbFieldValue              fieldValue
-	readInfluxdbRetentionPolicySelector retentionPolicyValue
-)
-
 func init() {
 	flag.Var(&readInfluxdbFieldValue, "read.influxdb.field", "Field to read sample values from.")
 	flag.Var(&readInfluxdbRetentionPolicySelector, "read.influxdb.retention-policy", "Retention policy to query from.")
 
+	flag.Lookup("read.influxdb.field").DefValue = defaultField
 	flag.Lookup("write.influxdb.url").DefValue = "http://localhost:8086"
 
 	prometheus.MustRegister(droppedSamples)

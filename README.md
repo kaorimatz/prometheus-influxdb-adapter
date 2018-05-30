@@ -66,7 +66,7 @@ You can also change the field (default is `value` field) in InfluxDB for storing
       -read.influxdb.database string
             InfluxDB database to read points from. (default "prometheus")
       -read.influxdb.field value
-            Field to read sample values from.
+            Field to read sample values from. (default value)
       -read.influxdb.retention-policy value
             Retention policy to query from.
       -read.influxdb.rpc-address string
