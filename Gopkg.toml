@@ -43,6 +43,10 @@
 
 [[constraint]]
   branch = "master"
+  name = "github.com/influxdata/yamux"
+
+[[constraint]]
+  branch = "master"
   name = "github.com/influxdata/yarpc"
 
 [[constraint]]
