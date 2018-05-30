@@ -126,8 +126,8 @@ var (
 	receivedPoints = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: prometheusNamespace,
-			Name:      "received_points_total",
-			Help:      "Total number of points received from InfluxDB.",
+			Name:      "read_points_total",
+			Help:      "Total number of points read from InfluxDB.",
 		},
 		[]string{"database", "retention_policy"},
 	)
