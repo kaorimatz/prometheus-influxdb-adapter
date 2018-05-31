@@ -849,13 +849,16 @@ func newWriter(logger log.Logger, config *writerConfig) (*writer, error) {
 		addr := net.JoinHostPort(config.influxdbURL.Hostname(), config.influxdbURL.Port())
 		client, err = influx.NewUDPClient(influx.UDPConfig{Addr: addr})
 	case "http", "https":
+		u := config.influxdbURL
+		user := u.User
+		u.User = nil
 		c := influx.HTTPConfig{
-			Addr:      config.influxdbURL.String(),
-			Username:  config.influxdbURL.User.Username(),
+			Addr:      u.String(),
+			Username:  user.Username(),
 			UserAgent: "prometheus-influxdb-adapter/" + version.Version,
 			Timeout:   config.influxdbTimeout,
 		}
-		if password, ok := config.influxdbURL.User.Password(); ok {
+		if password, ok := user.Password(); ok {
 			c.Password = password
 		}
 		client, err = influx.NewHTTPClient(c)
