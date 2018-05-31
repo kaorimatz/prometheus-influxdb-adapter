@@ -12,9 +12,11 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"sort"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/go-kit/kit/log"
@@ -398,14 +400,32 @@ func main() {
 		os.Exit(1)
 	}
 
-	http.Handle(*telemetryPath, promhttp.Handler())
-	http.Handle("/read", instrumentHandler("/read", newReadHandler(logger, reader)))
-	http.Handle("/write", instrumentHandler("/write", newWriteHandler(logger, writer)))
+	mux := http.NewServeMux()
+	mux.Handle("/read", instrumentHandler("/read", newReadHandler(logger, reader)))
+	mux.Handle("/write", instrumentHandler("/write", newWriteHandler(logger, writer)))
+	mux.Handle(*telemetryPath, promhttp.Handler())
 
-	level.Info(logger).Log("msg", "Listening on "+*listenAddress)
-	if err := http.ListenAndServe(*listenAddress, nil); err != nil {
+	server := &http.Server{Addr: *listenAddress, Handler: mux}
+
+	errCh := make(chan error)
+	go func() {
+		level.Info(logger).Log("msg", "Listening on "+*listenAddress)
+		errCh <- server.ListenAndServe()
+	}()
+
+	signalCh := make(chan os.Signal, 1)
+	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
+
+	select {
+	case err := <-errCh:
 		level.Error(logger).Log("err", err)
 		os.Exit(1)
+	case signal := <-signalCh:
+		level.Info(logger).Log("msg", "Received a shutdown signal", "signal", signal)
+		if err := server.Shutdown(context.Background()); err != nil {
+			level.Error(logger).Log("err", err)
+			os.Exit(1)
+		}
 	}
 }
 
