@@ -64,3 +64,7 @@
 [prune]
   go-tests = true
   unused-packages = true
+
+[[constraint]]
+  name = "github.com/coreos/go-systemd"
+  version = "17.0.0"

@@ -19,6 +19,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/coreos/go-systemd/activation"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/gogo/protobuf/proto"
@@ -407,10 +408,23 @@ func main() {
 
 	server := &http.Server{Addr: *listenAddress, Handler: mux}
 
+	listeners, err := activation.Listeners()
+	if err != nil {
+		level.Error(logger).Log("err", err)
+		os.Exit(1)
+	}
+	if len(listeners) > 2 {
+		level.Error(logger).Log("msg", "Too many file descriptors passed")
+	}
+
 	errCh := make(chan error)
 	go func() {
-		level.Info(logger).Log("msg", "Listening on "+*listenAddress)
-		errCh <- server.ListenAndServe()
+		if len(listeners) > 0 {
+			errCh <- server.Serve(listeners[0])
+		} else {
+			level.Info(logger).Log("msg", "Listening on "+*listenAddress)
+			errCh <- server.ListenAndServe()
+		}
 	}()
 
 	signalCh := make(chan os.Signal, 1)

@@ -35,6 +35,12 @@
   version = "v1.0.0"
 
 [[projects]]
+  name = "github.com/coreos/go-systemd"
+  packages = ["activation"]
+  revision = "39ca1b05acc7ad1220e09f133283b8859a8b71ab"
+  version = "v17"
+
+[[projects]]
   branch = "master"
   name = "github.com/dgryski/go-bits"
   packages = ["."]
@@ -445,6 +451,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0fc38e513aeaa3800486b6a5a7d67c19436f76a0a2bc59395981383ddc9fe49e"
+  inputs-digest = "ad27ad242e17f78f4c66e1196e135fb4867c2d07efe62ddefbaa0580b9294086"
   solver-name = "gps-cdcl"
   solver-version = 1
