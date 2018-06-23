@@ -126,7 +126,7 @@ var (
 		},
 	)
 
-	receivedPoints = prometheus.NewCounterVec(
+	readPoints = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: prometheusNamespace,
 			Name:      "read_points_total",
@@ -333,7 +333,7 @@ func init() {
 	flag.Lookup("write.influxdb.url").DefValue = "http://localhost:8086"
 
 	prometheus.MustRegister(droppedSamples)
-	prometheus.MustRegister(receivedPoints)
+	prometheus.MustRegister(readPoints)
 	prometheus.MustRegister(receivedSamples)
 	prometheus.MustRegister(requestDuration)
 	prometheus.MustRegister(requestSize)
@@ -570,7 +570,11 @@ func (r *reader) read(ctx context.Context, req *prompb.ReadRequest, db, rp strin
 		return nil, err
 	}
 
-	receivedPoints.WithLabelValues(db, rp).Add(float64(n))
+	db, rp = sreq.Database, ""
+	if i := strings.IndexByte(db, '/'); i != -1 {
+		db, rp = db[:i], db[i+1:]
+	}
+	readPoints.WithLabelValues(db, rp).Add(float64(n))
 
 	return resp, nil
 }
@@ -882,8 +886,6 @@ func (w *writer) write(req *prompb.WriteRequest, db, rp, cl string) error {
 		return err
 	}
 
-	writtenPoints.WithLabelValues(db, rp).Add(float64(len(points)))
-
 	return nil
 }
 
@@ -951,5 +953,11 @@ func (w *writer) writePoints(points []*influx.Point, db, rp, cl string) error {
 
 	bp.AddPoints(points)
 
-	return w.client.Write(bp)
+	if err = w.client.Write(bp); err != nil {
+		return err
+	}
+
+	writtenPoints.WithLabelValues(c.Database, c.RetentionPolicy).Add(float64(len(points)))
+
+	return nil
 }
