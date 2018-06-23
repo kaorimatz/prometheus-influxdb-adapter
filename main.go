@@ -615,8 +615,11 @@ func (r *reader) queryToReadRequest(q *prompb.Query, db, rp string) (*storage.Re
 		sreq.Database = r.config.influxdbDatabase
 	}
 
-	if rp == "" && q.Hints != nil {
-		step := q.Hints.StepMs * int64(time.Millisecond)
+	if rp == "" {
+		var step int
+		if q.Hints != nil {
+			step = q.Hints.StepMs * int64(time.Millisecond)
+		}
 		rp = r.retentionPolicySelector.get(step)
 	}
 	if rp != "" {
