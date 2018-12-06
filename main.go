@@ -382,11 +382,7 @@ func main() {
 		os.Exit(1)
 	}
 	retentionPolicySelector := readInfluxdbRetentionPolicySelector.selector()
-	reader, err := newReader(logger, rc, fieldSelector, retentionPolicySelector)
-	if err != nil {
-		level.Error(logger).Log("err", err)
-		os.Exit(1)
-	}
+	reader := newReader(logger, rc, fieldSelector, retentionPolicySelector)
 
 	wc := &writerConfig{
 		influxdbConsistencyLevel: *writeInfluxdbConsistencyLevel,
@@ -534,26 +530,25 @@ type reader struct {
 	retentionPolicySelector *retentionPolicySelector
 }
 
-func newReader(logger log.Logger, config *readerConfig, fieldSelector *fieldSelector, retentionPolicySelector *retentionPolicySelector) (*reader, error) {
-	level.Info(logger).Log("msg", "Connecting to InfluxDB RPC Server", "address", config.influxdbRPCAddress)
-	conn, err := yarpc.Dial(config.influxdbRPCAddress)
-	if err != nil {
-		return nil, err
-	}
-
+func newReader(logger log.Logger, config *readerConfig, fieldSelector *fieldSelector, retentionPolicySelector *retentionPolicySelector) *reader {
 	return &reader{
-		client:                  storage.NewStorageClient(conn),
 		config:                  config,
 		fieldSelector:           fieldSelector,
 		logger:                  logger,
 		retentionPolicySelector: retentionPolicySelector,
-	}, nil
+	}
 }
 
 func (r *reader) read(ctx context.Context, req *prompb.ReadRequest, db, rp string) (*prompb.ReadResponse, error) {
 	sreq, err := r.readRequestToStorageReadRequest(req, db, rp)
 	if err != nil {
 		return nil, err
+	}
+
+	if r.client == nil {
+		if err := r.connect(); err != nil {
+			return nil, err
+		}
 	}
 
 	stream, err := r.client.Read(ctx, sreq)
@@ -577,6 +572,24 @@ func (r *reader) read(ctx context.Context, req *prompb.ReadRequest, db, rp strin
 	readPoints.WithLabelValues(db, rp).Add(float64(n))
 
 	return resp, nil
+}
+
+func (r *reader) connect() error {
+	r.clientLock.Lock()
+	defer r.clientLock.Unlock()
+
+	if r.client != nil {
+		return nil
+	}
+
+	level.Info(r.logger).Log("msg", "Connecting to InfluxDB RPC Server", "address", r.config.influxdbRPCAddress)
+	conn, err := yarpc.Dial(r.config.influxdbRPCAddress)
+	if err != nil {
+		return err
+	}
+	r.client = storage.NewStorageClient(conn)
+
+	return nil
 }
 
 func (r *reader) retryRead(ctx context.Context, sreq *storage.ReadRequest) (storage.Storage_ReadClient, error) {
