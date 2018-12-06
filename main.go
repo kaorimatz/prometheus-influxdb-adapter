@@ -616,7 +616,7 @@ func (r *reader) queryToReadRequest(q *prompb.Query, db, rp string) (*storage.Re
 	}
 
 	if rp == "" {
-		var step int
+		var step int64
 		if q.Hints != nil {
 			step = q.Hints.StepMs * int64(time.Millisecond)
 		}
